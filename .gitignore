@@ -1,0 +1,65 @@
+# =====================================================================
+# REPOSITORIO: INTELIGENCIA PRODUCTO E-COMMERCE (.gitignore)
+# =====================================================================
+# Director de Datos: Configuración defensiva para evitar la sobresaturación
+# de archivos locales, datasets masivos y entornos virtuales en GitHub.
+
+# ---------------------------------------------------------------------
+# 1. ARCHIVOS DE DATOS (DATASETS MASIVOS)
+# ---------------------------------------------------------------------
+# Bloqueamos cualquier formato de archivo de datos (crudos, procesados o maestros).
+# Los datos masivos deben residir localmente, nunca subirse a Git.
+*.csv
+*.xlsx
+*.json
+*.parquet
+*.sql
+*.sqlite
+*.pkl
+*.pickle
+
+# Carpetas o directorios comunes de almacenamiento de datos
+data/
+datasets/
+Archivos_Maestros/
+
+# ---------------------------------------------------------------------
+# 2. ENTORNO VIRTUAL Y LIBRERÍAS (PYTHON VENV)
+# ---------------------------------------------------------------------
+# Bloqueamos las carpetas que contienen las copias locales de las librerías 
+# instaladas (pandas, numpy, scikit-learn). Evita subir miles de archivos innecesarios.
+.venv/
+venv/
+ENV/
+env/
+bin/
+lib/
+lib64/
+include/
+share/
+pyvenv.cfg
+pip-selfcheck.json
+
+# ---------------------------------------------------------------------
+# 3. CACHÉ DE PYTHON Y ARCHIVOS TEMPORALES
+# ---------------------------------------------------------------------
+# Archivos intermedios generados por el intérprete al ejecutar tus scripts o Jupyter.
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ---------------------------------------------------------------------
+# 4. CONFIGURACIONES LOCALES DE EDITORES Y SISTEMA OPERATIVO
+# ---------------------------------------------------------------------
+# Evita meter configuraciones propias de tu Windows, VS Code o carpetas ocultas.
+.DS_Store
+.DS_Store?
+ehthumbs.db
+Icon?
+Thumbs.db
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
