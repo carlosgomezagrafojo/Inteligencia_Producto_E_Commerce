@@ -4,11 +4,15 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-# =====================================================================
-# CONFIGURACIÓN DE RUTAS 
-# =====================================================================
-RUTA_TRANSFORMADOR = r"C:\Users\Carlos\Documents\Curso_Analisis_Data_bootcamp_Upgrade_Hub\Inteligencia_Producto_E_Commerce\models\preprocessors\transformador_aduana.pkl"
-RUTA_MODELO = r"C:\Users\Carlos\Documents\Curso_Analisis_Data_bootcamp_Upgrade_Hub\Inteligencia_Producto_E_Commerce\models\optimized_models\xgboost_campeon_optimizado.pkl"
+# Detecta automáticamente la carpeta raíz del proyecto donde esté corriendo el script
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Construye las rutas universales uniendo la raíz con las carpetas internas
+RUTA_LOGS = os.path.join(BASE_DIR, "data", "processed", "logs_inferencia.csv")
+RUTA_MODELO_CAMPEON = os.path.join(BASE_DIR, "models", "optimized_models", "xgboost_campeon_optimizado.pkl")
+RUTA_TRANSFORMADOR = os.path.join(BASE_DIR, "models", "preprocessors", "transformador_aduana.pkl")
+
+
 
 
 def registrar_log_inferencia(df_cliente, prob):
