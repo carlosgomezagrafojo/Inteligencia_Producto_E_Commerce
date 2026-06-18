@@ -2,11 +2,14 @@ import os
 import pandas as pd
 
 
-# CONFIGURACIÓN DE RUTAS ABSOLUTAS 
+# CONFIGURACIÓN DE RUTAS 
 
-RUTA_LOGS = r"C:\Users\Carlos\Documents\Curso_Analisis_Data_bootcamp_Upgrade_Hub\Inteligencia_Producto_E_Commerce\data\processed\logs_inferencia.csv"
-RUTA_ENTRENAMIENTO_HISTORICO = r"C:\Users\Carlos\Documents\Curso_Analisis_Data_bootcamp_Upgrade_Hub\Inteligencia_Producto_E_Commerce\data\processed\X_train_saneado.parquet"
-RUTA_DESTINO_REENTRENAMIENTO = r"C:\Users\Carlos\Documents\Curso_Analisis_Data_bootcamp_Upgrade_Hub\Inteligencia_Producto_E_Commerce\data\processed\materia_prima_reentrenamiento.parquet"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+RUTA_LOGS = os.path.join(BASE_DIR, "data", "processed", "logs_inferencia.csv")
+RUTA_ENTRENAMIENTO_HISTORICO = os.path.join(BASE_DIR, "data", "processed", "X_train_saneado.parquet")
+RUTA_DESTINO_REENTRENAMIENTO = os.path.join(BASE_DIR, "data", "processed", "materia_prima_reentrenamiento.parquet")
+
 
 def ejecutar_orquestacion_datos():
     print("=" * 80)
