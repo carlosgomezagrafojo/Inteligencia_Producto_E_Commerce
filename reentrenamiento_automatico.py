@@ -4,12 +4,16 @@ import pandas as pd
 import numpy as np
 from xgboost import XGBClassifier
 
-RUTA_MATERIA_PRIMA = r"C:\Users\Carlos\Documents\Curso_Analisis_Data_bootcamp_Upgrade_Hub\Inteligencia_Producto_E_Commerce\data\processed\materia_prima_reentrenamiento.parquet"
-RUTA_HISTORICO_X = r"C:\Users\Carlos\Documents\Curso_Analisis_Data_bootcamp_Upgrade_Hub\Inteligencia_Producto_E_Commerce\data\processed\X_train_saneado.parquet"
-RUTA_HISTORICO_Y = r"C:\Users\Carlos\Documents\Curso_Analisis_Data_bootcamp_Upgrade_Hub\Inteligencia_Producto_E_Commerce\data\processed\y_train.parquet"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-RUTA_TRANSFORMADOR = r"C:\Users\Carlos\Documents\Curso_Analisis_Data_bootcamp_Upgrade_Hub\Inteligencia_Producto_E_Commerce\models\preprocessors\transformador_aduana.pkl"
-RUTA_MODELO_CAMPEON = r"C:\Users\Carlos\Documents\Curso_Analisis_Data_bootcamp_Upgrade_Hub\Inteligencia_Producto_E_Commerce\models\optimized_models\xgboost_campeon_optimizado.pkl"
+RUTA_MATERIA_PRIMA = os.path.join(BASE_DIR, "data", "processed", "materia_prima_reentrenamiento.parquet")
+RUTA_HISTORICO_X = os.path.join(BASE_DIR, "data", "processed", "X_train_saneado.parquet")
+RUTA_HISTORICO_Y = os.path.join(BASE_DIR, "data", "processed", "y_train.parquet")
+RUTA_TRANSFORMADOR = os.path.join(BASE_DIR, "models", "preprocessors", "transformador_aduana.pkl")
+RUTA_MODELO_CAMPEON = os.path.join(BASE_DIR, "models", "optimized_models", "xgboost_campeon_optimizado.pkl")
+CARPETA_RESPALDOS = os.path.join(BASE_DIR, "models", "archive")
+
+
 
 # Nueva carpeta para que no se pierda ningún modelo del pasado
 CARPETA_RESPALDOS = r"C:\Users\Carlos\Documents\Curso_Analisis_Data_bootcamp_Upgrade_Hub\Inteligencia_Producto_E_Commerce\models\archive"
