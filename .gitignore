@@ -15,8 +15,8 @@
 *.parquet
 *.sql
 *.sqlite
-*.pkl
-*.pickle
+# .pkl
+#.pickle
 
 # Carpetas o directorios comunes de almacenamiento de datos
 data/
@@ -44,11 +44,11 @@ pip-selfcheck.json
 # 3. CACHÉ DE PYTHON Y ARCHIVOS TEMPORALES
 # ---------------------------------------------------------------------
 # Archivos intermedios generados por el intérprete al ejecutar tus scripts o Jupyter.
-__pycache__/
-*.py[cod]
-*$py.class
-.pytest_cache/
-.ipynb_checkpoints/
+# __pycache__/
+#.py[cod]
+# $py.class
+# .pytest_cache/
+# .ipynb_checkpoints/
 
 # ---------------------------------------------------------------------
 # 4. CONFIGURACIONES LOCALES DE EDITORES Y SISTEMA OPERATIVO
