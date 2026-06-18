@@ -5,11 +5,35 @@ import pandas as pd
 import streamlit as st
 
 # =====================================================================
-# 1. CONFIGURACIÓN DE RUTAS ABSOLUTAS (HECHOS)
+# CONFIGURACIÓN DE RUTAS 
 # =====================================================================
 RUTA_TRANSFORMADOR = r"C:\Users\Carlos\Documents\Curso_Analisis_Data_bootcamp_Upgrade_Hub\Inteligencia_Producto_E_Commerce\models\preprocessors\transformador_aduana.pkl"
 RUTA_MODELO = r"C:\Users\Carlos\Documents\Curso_Analisis_Data_bootcamp_Upgrade_Hub\Inteligencia_Producto_E_Commerce\models\optimized_models\xgboost_campeon_optimizado.pkl"
 
+
+def registrar_log_inferencia(df_cliente, prob):
+    """Escribe las consultas de los usuarios y dispara el guardián de re-entrenamiento."""
+    RUTA_LOGS = r"C:\Users\Carlos\Documents\Curso_Analisis_Data_bootcamp_Upgrade_Hub\Inteligencia_Producto_E_Commerce\data\processed\logs_inferencia.csv"
+
+    # Persistencia física en el CSV, Creamos una copia para añadirle el resultado del modelo sin alterar la matriz original
+    df_log = df_cliente.copy()
+    df_log["pred_probabilidad"] = prob
+    df_log["timestamp"] = pd.Timestamp.now() # Marcamos el momento exacto del registro (Gobernanza Temporal)
+    
+    archivo_existe = os.path.exists(RUTA_LOGS)
+    
+    # Si el archivo no existe, lo crea con cabeceras; si ya existe, añade la fila (Modo Append 'a')
+    if not os.path.exists(RUTA_LOGS):
+        df_log.to_csv(RUTA_LOGS, index=False)
+        total_lineas = 1
+    else:
+        df_log.to_csv(RUTA_LOGS, mode='a', header=False, index=False)
+        
+        # Conteo ultra-eficiente a nivel OS nievel operativo
+        with open(RUTA_LOGS, "r", encoding="utf-8") as f:
+            total_lineas = sum(1 for linea in f) - 1 # Restamos 1 para no contar la cabecera del CSV
+            
+    return total_lineas  # <-- Ahora devolvemos este dato al flujo principal
 
 # Carga optimizada en memoria
 @st.cache_resource
@@ -43,40 +67,49 @@ st.write(
 col_cat, col_num = st.columns(2)
 
 # --- COLUMNA 1: VARIABLES CATEGÓRICAS (Catálogos cerrados con búsqueda inteligente) ---
+
 with col_cat:
     st.subheader("📁 Variables Categóricas")
 
-    # Los elementos de estas listas corresponden a los valores únicos reales de tus datos
+    # Países alineados con el inventario real (columnas 07 a 25) + un país por defecto común
     country = st.selectbox(
-        "1. País de Origen (Soporta escritura para búsqueda):",
-        ["BR", "AR", "US", "ES", "CO", "CL", "MX", "PT", "FR", "DE"],
+        "1. País de Origen:",
+        ["US", "BR", "ES", "FR", "DE", "AU", "CA", "CH", "DK", "GB", "IN", "IT", "JP", "KR", "MX", "NL", "NO", "SE", "SG"]
     )
 
+    # Categorías alineadas exactamente (columnas 26 a 34)
     category = st.selectbox(
         "2. Categoría del Producto:",
         [
-            "electronics",
-            "fashion",
-            "home_appliances",
-            "health_beauty",
-            "sports",
-            "automotive",
-        ],
+            "Electronics",
+            "Clothing & Accessories",
+            "Beauty & Personal Care",
+            "Books",
+            "Grocery & Gourmet",
+            "Home & Kitchen",
+            "Office Products",
+            "Sports & Outdoors",
+            "Toys & Games"
+        ]
     )
 
+    # Tipos de dispositivo (columnas 35 y 36)
     device_type = st.selectbox(
-        "3. Dispositivo de Acceso:", ["mobile", "desktop", "tablet"]
+        "3. Dispositivo de Acceso:", 
+        ["mobile", "desktop", "tablet"]
     )
+
 
     interaction_type = st.selectbox(
         "4. Tipo de Interacción Principal:",
-        ["view", "add_to_wishlist", "click_ad", "purchase_attempt"],
+        ["view", "click", "add_to_wishlist", "remove_from_cart", "remove_from_wishlist"]
     )
 
     loyalty_tier = st.selectbox(
-        "5. Nivel de Fidelidad (Tier):", ["none", "regular", "silver", "gold"]
+        "5. Nivel de Fidelidad (Tier):", 
+        ["regular", "none", "silver", "gold", "platinum"]
     )
-
+ 
 # --- COLUMNA 2: VARIABLES NUMÉRICAS (Límites de control de negocio) ---
 with col_num:
     st.subheader("🔢 Variables Numéricas")
@@ -156,32 +189,51 @@ if st.button("🚀 Ejecutar Inferencia en Tiempo Real", type="primary"):
     try:
         # Paso 1: Transformación en la Máquina Moldeadora (Genera las 44 columnas resultantes del OHE/Yeo-Johnson)
         datos_saneados = aduana_datos.transform(registro_cliente)
-
+          
         # Paso 2: Inferencia en el XGBoost Campeón
         prediccion = xgboost_campeon.predict(datos_saneados)[0]
-        probabilidad = xgboost_campeon.predict_proba(datos_saneados)[0][
-            1
-        ]  # Clase True
+        probabilidad = xgboost_campeon.predict_proba(datos_saneados)[0][1] # Clase True
 
-        # Paso 3: Despliegue de resultados de gobernanza
-        st.subheader("🔬 Diagnóstico de Inferencia")
+        # Guardamos en la caja negra y obtenemos el conteo real instantáneo
+        total_acumulado = registrar_log_inferencia(registro_cliente, probabilidad)
+
+        UMBRAL = 50
+        with st.sidebar:
+            st.header("⚙️ Consola de Ingeniería de Datos")
+            st.metric(label="Masa Crítica Acumulada", value=f"{total_acumulado} / {UMBRAL}")
+            
+            # Alerta persistente evalúa si tocamos el umbral exacto (ej. 50, 100, 150...)
+            if total_acumulado > 0 and total_acumulado % UMBRAL == 0:
+                st.error("🚨 TRIGGER ACTIVO: Iniciando Orquestador de Datos...")
+                
+                # Lanzamos el script en segundo plano de manera segura
+                import subprocess
+                import sys
+                
+                try:
+                    # Ejecuta: python trigger_reentrenamiento.py
+                    subprocess.Popen([sys.executable, "trigger_reentrenamiento.py"])
+                    st.caption("🟢 Script orquestador lanzado con éxito en segundo plano.")
+                except Exception as error_trigger:
+                    st.caption(f"❌ Error al lanzar el orquestador: {str(error_trigger)}")
+            else:
+                st.success("🟢 INFRAESTRUCTURA: Estado Óptimo. Capturando logs...")
+         
         c1, c2 = st.columns(2)
 
         with c1:
             st.metric(
-                label="Probabilidad de Conversión Estimada",
-                value=f"{probabilidad * 100:.2f}%",
+               label="Probabilidad de Conversión Estimada",
+               value=f"{probabilidad * 100:.2f}%",
             )
 
         with c2:
-            if prediccion == 1:
-                st.success(
-                    "🔥 ALERTA DE NEGOCIO: Alta probabilidad de conversión (Clase Fiel Detectada)."
-                )
+            if probabilidad >= 0.70:
+                st.success("🔥 ALERTA DE NEGOCIO: Alta probabilidad de conversión (Clase Fiel Máxima).")
+            elif 0.25 <= probabilidad < 0.70:
+                st.warning("⚡ OPORTUNIDAD INTERMEDIA: Cliente tibio/caliente. Sugerir cupón de descuento inmediato.")
             else:
-                st.info(
-                    "💤 COMPORTAMIENTO PASIVO: El cliente no muestra patrones de propensión inmediata."
-                )
+                st.info("💤 COMPORTAMIENTO PASIVO: El cliente no muestra patrones de propensión inmediata.")
 
     except Exception as e:
         st.error(
