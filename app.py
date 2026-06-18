@@ -4,55 +4,55 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-# Detecta automáticamente la carpeta raíz del proyecto donde esté corriendo el script
+# Detecta automáticamente la carpeta raíz del proyecto donde esté corriendo el script# Detecta automáticamente la carpeta raíz del proyecto donde esté corriendo el script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Construye las rutas universales uniendo la raíz con las carpetas internas
+# Construye las rutas universales uniendo la raíz con las carpetas internas (Cabecera Correcta)
 RUTA_LOGS = os.path.join(BASE_DIR, "data", "processed", "logs_inferencia.csv")
 RUTA_MODELO_CAMPEON = os.path.join(BASE_DIR, "models", "optimized_models", "xgboost_campeon_optimizado.pkl")
 RUTA_TRANSFORMADOR = os.path.join(BASE_DIR, "models", "preprocessors", "transformador_aduana.pkl")
 
 
-
-
 def registrar_log_inferencia(df_cliente, prob):
     """Escribe las consultas de los usuarios y dispara el guardián de re-entrenamiento."""
-    RUTA_LOGS = r"C:\Users\Carlos\Documents\Curso_Analisis_Data_bootcamp_Upgrade_Hub\Inteligencia_Producto_E_Commerce\data\processed\logs_inferencia.csv"
+    # 💥 AQUÍ BORRAMOS LA LÍNEA QUE TENÍA EL "C:\Users\Carlos..." 💥
+    # El sistema usará directamente la RUTA_LOGS universal definida arriba.
 
-    # Persistencia física en el CSV, Creamos una copia para añadirle el resultado del modelo sin alterar la matriz original
+    # Persistencia física en el CSV
     df_log = df_cliente.copy()
     df_log["pred_probabilidad"] = prob
-    df_log["timestamp"] = pd.Timestamp.now() # Marcamos el momento exacto del registro (Gobernanza Temporal)
+    df_log["timestamp"] = pd.Timestamp.now() # Gobernanza Temporal
     
     archivo_existe = os.path.exists(RUTA_LOGS)
     
     # Si el archivo no existe, lo crea con cabeceras; si ya existe, añade la fila (Modo Append 'a')
-    if not os.path.exists(RUTA_LOGS):
+    if not archivo_existe: # Usamos la variable booleana que creamos arriba de forma limpia
         df_log.to_csv(RUTA_LOGS, index=False)
         total_lineas = 1
     else:
         df_log.to_csv(RUTA_LOGS, mode='a', header=False, index=False)
         
-        # Conteo ultra-eficiente a nivel OS nievel operativo
+        # Conteo ultra-eficiente a nivel operativo
         with open(RUTA_LOGS, "r", encoding="utf-8") as f:
-            total_lineas = sum(1 for linea in f) - 1 # Restamos 1 para no contar la cabecera del CSV
+            total_lineas = sum(1 for linea in f) - 1 # Restamos 1 de la cabecera
             
-    return total_lineas  # <-- Ahora devolvemos este dato al flujo principal
+    return total_lineas 
+
 
 # Carga optimizada en memoria
 @st.cache_resource
 def cargar_componentes():
-    if not os.path.exists(RUTA_TRANSFORMADOR) or not os.path.exists(
-        RUTA_MODELO
-    ):
+    # 1. Validamos que ambos archivos existan usando los nombres correctos de tu cabecera
+    if not os.path.exists(RUTA_TRANSFORMADOR) or not os.path.exists(RUTA_MODELO_CAMPEON):
         st.error(
             "⚠️ Archivos de producción no encontrados. Verifique las rutas locales."
         )
         st.stop()
-    with open(RUTA_TRANSFORMADOR, "rb") as f_trans:
-        trans = joblib.load(f_trans)
-    with open(RUTA_MODELO, "rb") as f_mod:
-        mod = joblib.load(f_mod)
+        
+    # 2. Carga directa y limpia con joblib
+    trans = joblib.load(RUTA_TRANSFORMADOR)
+    mod = joblib.load(RUTA_MODELO_CAMPEON)
+    
     return trans, mod
 
 
