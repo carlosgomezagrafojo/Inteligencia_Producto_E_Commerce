@@ -197,7 +197,7 @@ if st.button("🚀 Ejecutar Inferencia en Tiempo Real", type="primary"):
         # Guardamos en la caja negra y obtenemos el conteo real instantáneo
         total_acumulado = registrar_log_inferencia(registro_cliente, probabilidad)
 
-        UMBRAL = 50
+        UMBRAL = 43
         with st.sidebar:
             st.header("⚙️ Consola de Ingeniería de Datos")
             st.metric(label="Masa Crítica Acumulada", value=f"{total_acumulado} / {UMBRAL}")

@@ -34,8 +34,20 @@ def ejecutar_orquestacion_datos():
     # Guardamos este bloque en un archivo Parquet intermedio para que el Cuaderno 3 pueda absorberlo
     df_nuevos_limpios.to_parquet(RUTA_DESTINO_REENTRENAMIENTO, index=False)
     print(f"💾 Materia prima exportada con éxito en: {RUTA_DESTINO_REENTRENAMIENTO}")
-    print("=" * 80)
-    print("🟢 [HECHO]: Datos preparados. El sistema está listo para la Fase 10 (Modelado).")
+    
+    # LLAMADA AL BUCLE DE RE-ENTRENAMIENTO
+    print("🔌 Conectando con el motor de re-entrenamiento...")
+    import subprocess
+    import sys
+    
+    try:
+        # El orquestador ejecuta el script del nuevo cerebro de forma secuencial
+        subprocess.run([sys.executable, "reentrenamiento_automatico.py"], check=True)
+        print("🟢 [HECHO]: El bucle circular se ejecutó y cerró con éxito.")
+    except Exception as e:
+        print(f"❌ ERROR al ejecutar el re-entrenamiento: {str(e)}")
+        return False
+
     print("=" * 80)
     return True
 
