@@ -4,19 +4,23 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-# Detecta automáticamente la carpeta raíz del proyecto donde esté corriendo el script# Detecta automáticamente la carpeta raíz del proyecto donde esté corriendo el script
+# 1. Configuración de rutas universales
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Construye las rutas universales uniendo la raíz con las carpetas internas (Cabecera Correcta)
-RUTA_LOGS = os.path.join(BASE_DIR, "data", "processed", "logs_inferencia.csv")
+# Definimos la carpeta contenedora de datos procesados
+CARPETA_PROCESSED = os.path.join(BASE_DIR, "data", "processed")
+
+# Si la carpeta no existe en la nube, la creamos en milisegundos
+if not os.path.exists(CARPETA_PROCESSED):
+    os.makedirs(CARPETA_PROCESSED, exist_ok=True)
+
+# Tus variables de rutas se quedan exactamente igual, usando la carpeta ya asegurada
+RUTA_LOGS = os.path.join(CARPETA_PROCESSED, "logs_inferencia.csv")
 RUTA_MODELO_CAMPEON = os.path.join(BASE_DIR, "models", "optimized_models", "xgboost_campeon_optimizado.pkl")
 RUTA_TRANSFORMADOR = os.path.join(BASE_DIR, "models", "preprocessors", "transformador_aduana.pkl")
 
-
 def registrar_log_inferencia(df_cliente, prob):
     """Escribe las consultas de los usuarios y dispara el guardián de re-entrenamiento."""
-    # 💥 AQUÍ BORRAMOS LA LÍNEA QUE TENÍA EL "C:\Users\Carlos..." 💥
-    # El sistema usará directamente la RUTA_LOGS universal definida arriba.
 
     # Persistencia física en el CSV
     df_log = df_cliente.copy()
