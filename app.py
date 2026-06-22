@@ -1,29 +1,33 @@
+# Importación de librerías:
 import os
 import joblib   
 import numpy as np
 import pandas as pd
 import streamlit as st
 
-# =====================================================================
-# CONFIGURACIÓN INICIAL DE LA APP (OBLIGATORIO EN LA LÍNEA 1)
-# =====================================================================
-# Con esta función configuramos el título de la pestaña del navegador, el icono y forzamos el diseño 'wide' (ancho completo)
+# =============================================================================
+# CONFIGURACIÓN GLOBAL E INICIALIZACIÓN DE LA INTERFAZ
+# =============================================================================
+# Definición del entorno de renderizado, metadatos y maquetación de la app web
+
 st.set_page_config(
-    page_title="Inteligencia El Bosque - E-Commerce",
+    page_title="Inteligencia de Producto - E-Commerce",
     page_icon="🌳",
-    layout="wide"
+    layout="wide" # forzamos el diseño "wide" (ancho completo)
 )
 
 # =====================================================================
 # GERENCIA DE RUTAS Y PERSISTENCIA (SISTEMA BASE)
 # =====================================================================
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CARPETA_PROCESSED = os.path.join(BASE_DIR, "data", "processed")
 
-# Validamos la existencia del directorio de datos procesados en caliente
+# Validamos y aseguramiento de la existencia del directorio físico para datos procesados en caliente
 if not os.path.exists(CARPETA_PROCESSED):
     os.makedirs(CARPETA_PROCESSED, exist_ok=True)
 
+# Definición de endpoints de almacenamiento e inferencia
 RUTA_LOGS = os.path.join(CARPETA_PROCESSED, "logs_inferencia.csv")
 RUTA_MODELO_CAMPEON = os.path.join(BASE_DIR, "models", "optimized_models", "xgboost_campeon_optimizado.pkl")
 RUTA_TRANSFORMADOR = os.path.join(BASE_DIR, "models", "preprocessors", "transformador_aduana.pkl")
@@ -31,37 +35,51 @@ RUTA_TRANSFORMADOR = os.path.join(BASE_DIR, "models", "preprocessors", "transfor
 # =====================================================================
 # FUNCIONES DE INFRAESTRUCTURA (LOGS Y CACHÉ)
 # =====================================================================
+
+# Guarda cada consulta o iteración que hace un cliente para poder auditar el comportamiento del modelo en producción.
 def registrar_log_inferencia(df_cliente, prob):
     """Registra de manera síncrona las consultas de auditoría en el CSV de producción."""
-    df_log = df_cliente.copy()
-    df_log["pred_probabilidad"] = prob
-    df_log["timestamp"] = pd.Timestamp.now()
+    df_log = df_cliente.copy() # Crea una copia explícita en memoria del DataFrame del cliente
+    df_log["pred_probabilidad"] = prob # Crea una columna nueva pred_probabilidad en el df_log y le asigna el valor de la predicción para dejar constancia de qué respondió la IA.
+    df_log["timestamp"] = pd.Timestamp.now() # Trazabilidad. Inyecta una columna con la fecha y hora exacta del sistema en la que ocurrió la inferencia.
     
+    # Control de almacenamiento. 
     archivo_existe = os.path.exists(RUTA_LOGS)
     
+    # Verifica en el sistema de archivos local si el archivo físico logs_inferencia.csv ya existe o si es la primera inferencia de la aplicación
     if not archivo_existe: 
         df_log.to_csv(RUTA_LOGS, index=False)
         total_lineas = 1
     else:
-        df_log.to_csv(RUTA_LOGS, mode='a', header=False, index=False)
-        with open(RUTA_LOGS, "r", encoding="utf-8") as f:
+        # Si el archivo ya existía en el disco, se ejecuta este bloque para añadir datos sin destruir el histórico previo.
+        df_log.to_csv(RUTA_LOGS, mode='a', header=False, index=False) # mode='a'(append) y header= false => Escribe la nueva inferencia al final del archivo existente sin las cabeceras poque ya se crearon la primera vez y así evitamos romper la estructura del CSV.
+        with open(RUTA_LOGS, "r", encoding="utf-8") as f: # abrir el archivo de logs en modo lectura ("r"), el archivo se cierre automáticamente en el sistema operativo al terminar el bloque, evitando fugas de memoria o bloqueos de archivo.
             total_lineas = sum(1 for linea in f) - 1 
             
-    return total_lineas 
+    return total_lineas # muestra en vivo el Nº total de registros históricos auditados para que la interfaz web 
 
+# Decorador de objeto; serializa un objeto pesado o complejo (modelo.pkl) que se encuentran en la memoria RAM y los transforma una lista o un 
+# diccionario que son formatos de datos que se pueden almacenar o transmitir fácilmente. 
 @st.cache_resource
+
+# 
 def cargar_componentes():
     """Carga defensiva de los artefactos del pipeline de Machine Learning."""
+    
+    # Antes de intentar cargar nada, verifica si los archivos reales:
     if not os.path.exists(RUTA_TRANSFORMADOR) or not os.path.exists(RUTA_MODELO_CAMPEON):
-        st.error("⚠️ Archivos de producción no encontrados. Verifique las rutas locales.")
+        st.error("⚠️ Archivos de producción no encontrados. Verifique las rutas locales.") # si no están muestra un mensaje de error y despues para
         st.stop()
-        
-    trans = joblib.load(RUTA_TRANSFORMADOR)
-    mod = joblib.load(RUTA_MODELO_CAMPEON)
+          
+    # Es la herramienta que "despierta" o deserializa tus artefactos de Machine Learning (el preprocesamiento y el modelo XGBoost) para que puedan
+    # recibir datos de los usuarios en tiempo real y devolver predicciones.    
+    trans = joblib.load(RUTA_TRANSFORMADOR) # transformador
+    mod = joblib.load(RUTA_MODELO_CAMPEON)  # modelo de predicción
     return trans, mod
 
+# # Inicialización del pipeline predictivo en el ciclo de vida de la aplicación
 # Activamos la carga de la aduana matemática y el modelo predictivo
-aduana_datos, xgboost_campeon = cargar_componentes()
+aduana_datos, xgboost_campeon = cargar_componentes() # el trnasformador y el modelo predictor
 
 
 # =====================================================================
@@ -74,12 +92,12 @@ st.sidebar.markdown("---")
 opcion = st.sidebar.radio(
     "Selecciona un Capítulo del Proyecto:",
     [
-        "1. Macro-Descubrimiento 📊",
-        "2. Alquimia de Datos 🧪",
-        "3. Torneo de Baselines ⚔️",
-        "4. El Cerebro Optimizado 🧠",
-        "5. Simulador Real-Time 🚀",
-        "6. El Centinela MLOps 🔄"
+        "1. Exploración y Análisis de Datos (EDA) 📊",
+        "2. Preprocesamiento y Transformación de Datos 🧪",
+        "3. Evaluación Primaria de Modelos ⚔️",
+        "4. Optimización de Hiperparámetros 🧠",
+        "5. Simulador de Predicción en Tiempo Real 🚀",
+        "6. Monitoreo y Re-entrenamiento Automatizado (MLOps) 🔄"
     ]
 )
 
@@ -90,13 +108,15 @@ st.sidebar.info("Desarrollado por Carlos Gómez | Pipeline MLOps v2.0")
 # =====================================================================
 # 📊 BLOQUE DE CÓDIGO: ÁRBOL 1 - MACRO-DESCUBRIMIENTO DEL NEGOCIO
 # =====================================================================
-if opcion == "1. Macro-Descubrimiento 📊":
+if opcion == "1. Exploración y Análisis de Datos (EDA) 📊":
     import plotly.express as px
     import plotly.graph_objects as go
 
-    st.title("📊 Árbol 1: Macro-Descubrimiento del Negocio")
+    st.title("📊: Exploración y Análisis de Datos (EDA)")
     st.markdown("---")
 
+
+    # Decorador de datos: guarda en memoria RAM datos puros (DataFrames de Pandas, consultas SQL, transformaciones de texto, etc.).
     @st.cache_data
     def cargar_tablon_maestro():
         """Carga optimizada con caché para evitar lecturas de disco repetitivas."""
@@ -259,14 +279,14 @@ if opcion == "1. Macro-Descubrimiento 📊":
 
 
 # =====================================================================
-# 🧪 BLOQUE DE CÓDIGO: ÁRBOL 2 - ALQUIMIA DE DATOS (INGENIERÍA Y PREPROCESAMIENTO)
+# 🧪 BLOQUE DE CÓDIGO 2: Preprocesamiento y Transformación de Datos 
 # =====================================================================
-elif opcion == "2. Alquimia de Datos 🧪":
+elif opcion == "2. Preprocesamiento y Transformación de Datos 🧪":
     import plotly.express as px
     import plotly.graph_objects as go
     import scipy.stats as stats
 
-    st.title("🧪 Árbol 2: Alquimia de Datos e Ingeniería de Variables")
+    st.title("🧪: Preprocesamiento, Transformación de Datos e Ingeniería de Variables")
     st.markdown("---")
 
     # CARGA SEGURO DE DATOS INTERMEDIOS
@@ -430,14 +450,14 @@ elif opcion == "2. Alquimia de Datos 🧪":
         st.table(reporte_final_df)
 
 # =====================================================================
-# ⚔️ BLOQUE DE CÓDIGO FINAL: ÁRBOL 3 - EL TORNEO COMPLETO CON GRÁFICOS MACRO
+# ⚔️ BLOQUE 3: Evaluación Primaria de Modelos
 # =====================================================================
-elif opcion == "3. Torneo de Baselines ⚔️":
+elif opcion == "3. Evaluación Primaria de Modelos ⚔️":
     import plotly.express as px
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    st.title("⚔️ Árbol 3: Torneo Épico de Modelos (Parrilla de 8 Motores)")
+    st.title("⚔️ 3: Evaluación Primaria de Modelos")
     st.markdown("---")
 
     # Pestañas tácticas de la fase de entrenamiento
@@ -685,13 +705,13 @@ elif opcion == "3. Torneo de Baselines ⚔️":
         st.plotly_chart(fig_imp, use_container_width=True)
 
 # =====================================================================
-# 🧠 BLOQUE DE CÓDIGO: ÁRBOL 4 - EL CEREBRO OPTIMIZADO
+# 🧠 BLOQUE DE CÓDIGO 4 Optimización de Hiperparámetros
 # =====================================================================
-elif opcion == "4. El Cerebro Optimizado 🧠":
+elif opcion == "4. Optimización de Hiperparámetros 🧠":
     import plotly.graph_objects as go
     import plotly.express as px
 
-    st.title("🧠 Árbol 4: El Cerebro Optimizado (Tuning & Auditoría)")
+    st.title("🧠 4: Optimización de Hiperparámetros (Tuning & Auditoría)")
     st.markdown("---")
     
     st.write(
@@ -766,9 +786,9 @@ elif opcion == "4. El Cerebro Optimizado 🧠":
     st.success("🏁 **Certificado de Gobierno de Datos:** El modelo cumple las directrices de estabilidad y está listo para producción.")      
     
 # =====================================================================
-# 🚀 BLOQUE DE CÓDIGO: ÁRBOL 5 - SIMULADOR PREDICTIVO REAL-TIME (TU ORIGINAL)
+# 🚀 BLOQUE DE CÓDIGO 5 - Simulador de Predicción en Tiempo Real
 # =====================================================================
-elif opcion == "5. Simulador Real-Time 🚀":
+elif opcion == "5. Simulador de Predicción en Tiempo Real 🚀":
     st.title("🎯 Simulador de Comportamiento de Clientes")
     st.write(
         "Introduzca los parámetros del cliente. El sistema validará los datos mediante la aduana matemática antes de la inferencia."
@@ -871,12 +891,12 @@ elif opcion == "5. Simulador Real-Time 🚀":
 
 
 # =====================================================================
-# 🔄 BLOQUE DE CÓDIGO: ÁRBOL 6 - EL CENTINELA MLOPS (CAPA DE GOBERNANZA)
+# 🔄 BLOQUE DE CÓDIGO 6 Monitoreo y Re-entrenamiento Automatizado (MLOps)
 # =====================================================================
-elif opcion == "6. El Centinela MLOps 🔄":
+elif opcion == "6. Monitoreo y Re-entrenamiento Automatizado (MLOps) 🔄":
     import plotly.graph_objects as go
 
-    st.title("🔄 Árbol 6: El Centinela MLOps & Gobernanza Circular")
+    st.title("🔄 : Monitoreo y Re-entrenamiento Automatizado (MLOps)")
     st.markdown("---")
     
     st.write(
