@@ -27,10 +27,27 @@ CARPETA_PROCESSED = os.path.join(BASE_DIR, "data", "processed")
 if not os.path.exists(CARPETA_PROCESSED):
     os.makedirs(CARPETA_PROCESSED, exist_ok=True)
 
-# Definición de endpoints de almacenamiento e inferencia
+# Definición de endpoints de almacenamiento e inferencia (Mantenemos tus rutas oficiales)
 RUTA_LOGS = os.path.join(CARPETA_PROCESSED, "logs_inferencia.csv")
 RUTA_MODELO_CAMPEON = os.path.join(BASE_DIR, "models", "optimized_models", "xgboost_campeon_optimizado.pkl")
 RUTA_TRANSFORMADOR = os.path.join(BASE_DIR, "models", "preprocessors", "transformador_aduana.pkl")
+
+# ⚡ NUEVA RUTA PARA EL TABLÓN COMPRIMIDO DE PRODUCCIÓN
+RUTA_PARQUET = os.path.join(CARPETA_PROCESSED, "ecommerce_master_tablon.parquet")
+
+# =====================================================================
+# MOTOR DE CARGA OPTIMIZADO PARA PRODUCCIÓN (PARQUET)
+# =====================================================================
+@st.cache_data
+def cargar_datos_produccion():
+    if os.path.exists(RUTA_PARQUET):
+        return pd.read_parquet(RUTA_PARQUET)
+    else:
+        st.error(f"❌ Error Crítico: No se encontró el archivo Parquet en: {RUTA_PARQUET}")
+        return pd.DataFrame()
+
+# Cargamos el DataFrame globalmente para que lo usen tus gráficos del EDA
+df = cargar_datos_produccion()
 
 # =====================================================================
 # FUNCIONES DE INFRAESTRUCTURA (LOGS Y CACHÉ)
@@ -105,8 +122,10 @@ st.sidebar.markdown("---")
 st.sidebar.info("Desarrollado por Carlos Gómez | Pipeline MLOps v2.0")
 
 
+
+
 # =====================================================================
-# 📊 BLOQUE DE CÓDIGO: ÁRBOL 1 - MACRO-DESCUBRIMIENTO DEL NEGOCIO
+# 📊 BLOQUE DE CÓDIGO 1 Exploración y Análisis de Datos
 # =====================================================================
 if opcion == "1. Exploración y Análisis de Datos (EDA) 📊":
     import plotly.express as px
@@ -116,28 +135,36 @@ if opcion == "1. Exploración y Análisis de Datos (EDA) 📊":
     st.markdown("---")
 
 
-    # Decorador de datos: guarda en memoria RAM datos puros (DataFrames de Pandas, consultas SQL, transformaciones de texto, etc.).
-    @st.cache_data
-    def cargar_tablon_maestro():
-        """Carga optimizada con caché para evitar lecturas de disco repetitivas."""
-        ruta = os.path.join(CARPETA_PROCESSED, "ecommerce_master_tablon.csv")
-        if not os.path.exists(ruta):
-            st.error(f"❌ No se encontró el tablón maestro en: {ruta}")
-            return None
-        df = pd.read_csv(ruta)
-        df.columns = df.columns.str.strip().str.lower()
+    # =====================================================================
+    # PREPARACIÓN EN CALIENTE DE VARIABLES MACROECONÓMICAS (EDA)
+    # =====================================================================
+    if df is not None and not df.empty:
+        # Duplicamos localmente para evitar colisiones en caché
+        df_bi = df.copy()
+        df_bi.columns = df_bi.columns.str.strip().str.lower()
         
-        # Inyección de métricas financieras de control
-        if 'price' in df.columns and 'is_converted' in df.columns:
-            df['ingreso_real'] = df['price'] * df['is_converted'].astype(int)
-        if 'timestamp' in df.columns:
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            df['año'] = df['timestamp'].dt.year
-            df['año_mes'] = df['timestamp'].dt.to_period('M').astype(str)
-        return df
+        # Inyección dinámica de métricas financieras de control
+        if 'price' in df_bi.columns and 'is_converted' in df_bi.columns:
+            df_bi['ingreso_real'] = df_bi['price'] * df_bi['is_converted'].astype(int)
+        else:
+            # En caso de que las variables vengan en formato nativo del dataset Olist
+            if 'revenue' in df_bi.columns and 'page_values' in df_bi.columns:
+                df_bi['ingreso_real'] = df_bi['page_values'] * df_bi['revenue'].astype(int)
+                df_bi['is_converted'] = df_bi['revenue']
+            else:
+                df_bi['ingreso_real'] = 0
+                df_bi['is_converted'] = 0
 
-    with st.spinner("Sincronizando con el Centro de Datos del Negocio..."):
-        df_bi = cargar_tablon_maestro()
+        if 'timestamp' in df_bi.columns:
+            df_bi['timestamp'] = pd.to_datetime(df_bi['timestamp'])
+            df_bi['año'] = df_bi['timestamp'].dt.year
+            df_bi['año_mes'] = df_bi['timestamp'].dt.to_period('M').astype(str)
+        else:
+            # Plan de contingencia si no hay serie de tiempo explícita: creamos eje estático
+            df_bi['año_mes'] = "Fase Activa 2026"
+    else:
+        df_bi = None
+        st.error("❌ El motor de datos global está vacío o no se ha inicializado correctamente.")
 
     if df_bi is not None:
         # -----------------------------------------------------------------
@@ -276,6 +303,7 @@ if opcion == "1. Exploración y Análisis de Datos (EDA) 📊":
                                  barmode='group', title="Segmentación por Tipo de Dispositivo",
                                  template="plotly_dark")
                 st.plotly_chart(fig_dev, use_container_width=True)
+
 
 
 # =====================================================================
