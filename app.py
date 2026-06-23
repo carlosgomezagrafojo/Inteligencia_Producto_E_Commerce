@@ -477,16 +477,13 @@ elif opcion == "2. Preprocesamiento y Transformación de Datos 🧪":
         })
         st.table(reporte_final_df)
          
- 
-        
-
 
 
 
 # =====================================================================
 # ⚔️ BLOQUE 3: Evaluación Primaria de Modelos
 # =====================================================================
-if opcion == "3. Evaluación Primaria de Modelos ⚔️":
+elif opcion == "3. Evaluación Primaria de Modelos ⚔️":
     import plotly.express as px
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
