@@ -102,7 +102,6 @@ aduana_datos, xgboost_campeon = cargar_componentes() # el trnasformador y el mod
 # =====================================================================
 # SEPARADOR DE LA PANTALLA: BARRA LATERAL IZQUIERDA (NAVEGACIÓN)
 # =====================================================================
-# Aquí estructuramos el menú global que controlará qué parte de la app se renderiza en el centro
 st.sidebar.title("🌳 El Bosque: IA Control")
 st.sidebar.markdown("---")
 
@@ -480,15 +479,19 @@ elif opcion == "2. Preprocesamiento y Transformación de Datos 🧪":
          
  
         
+
+
+
+
 # =====================================================================
 # ⚔️ BLOQUE 3: Evaluación Primaria de Modelos
 # =====================================================================
-elif opcion == "3. Evaluación Primaria de Modelos ⚔️":
+if opcion == "3. Evaluación Primaria de Modelos ⚔️":
     import plotly.express as px
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
-    st.title("⚔️ 3: Evaluación Primaria de Modelos")
+    st.title("⚔️ 3: Evaluación Primaria de Modelos (Torneo de Baselines)")
     st.markdown("---")
 
     # Pestañas tácticas de la fase de entrenamiento
@@ -591,7 +594,7 @@ elif opcion == "3. Evaluación Primaria de Modelos ⚔️":
             st.markdown("#### 🔍 Dictamen del Director de Análisis (Línea Base):")
             st.warning(
                 "⚠️ **La trampa del Accuracy:** Aunque la *Regresión Logística* ofrece un Accuracy alto (0.8905), su Recall es crítico (0.0820). "
-                "Sufre de ceguera predictiva ante la clase minoritaria, clasificando casi todo como 'No Compra'."
+                "Sufre de ceguera predictiva ante la clase minoritaria, classifying casi todo como 'No Compra'."
             )
             st.error(
                 "❌ **Inercia del Desbalanceo:** Ningún modelo básico en estado puro logra cruzar la frontera de un F1-Score de 0.50 debido a la "
@@ -678,39 +681,19 @@ elif opcion == "3. Evaluación Primaria de Modelos ⚔️":
             height=400,
             legend=dict(x=0.55, y=0.1)
         )
-        # ESTA CLAVE BLINDA EL GRÁFICO CONTRA EL ERROR DE JAVASCRIPT
         st.plotly_chart(fig_roc, use_container_width=True, key="grafico_curvas_roc_v2")
 
     # =================================================================
     # PESTAÑA 3: OPTIMIZACIÓN EN REJILLA E INTERPRETABILIDAD
     # =================================================================
     with tab3:
-        st.subheader("🎯 Fase 6A: Refinamiento de Rejilla Avanzada (GridSearchCV)")
-        st.write("Tras la reñida disputa en la segunda carrera, el campeón definitivo pasa por la optimización fina:")
-        
-        col_opt1, col_opt2 = st.columns(2)
-        with col_opt1:
-            st.code(
-                "Hiperparámetros Ganadores del Proceso:\n"
-                "- Algoritmo: XGBClassifier\n"
-                "- learning_rate: 0.05\n"
-                "- max_depth: 4\n"
-                "- n_estimators: 150\n"
-                "- subsample: 0.8", 
-                language="text"
-            )
-        with col_opt2:
-            st.metric(label="F1-Score Final Optimizado", value="0.5145", delta="+0.0173 vs Ajustado")
-            st.metric(label="AUC-ROC Final Consolidado", value="0.8920", delta="+0.0108 vs Ajustado")
-
-        st.markdown("---")
-        st.subheader("🔬 Reporte de Gobierno de Datos: Importancia de Variables en los Dos Líderes")
-        st.write("Contraste de pesos predictivos entre el Campeón y el Escolta más cercano:")
+        st.subheader("🎯 Torneo Final: Importancia de Variables de Líderes")
+        st.write("Contraste de pesos predictivos estructurales antes de la fase de sintonía fina:")
 
         df_importancia = pd.DataFrame({
-            "Variable": ["dwell_time", "page_values", "bounce_rates", "exit_rates", "product_duration", "special_day", "informational_duration", "administrative", "month_Nov", "operating_systems"],
-            "XGBoost Campeón (Gain)": [0.3840, 0.2910, 0.0912, 0.0640, 0.0410, 0.0320, 0.0250, 0.0210, 0.0190, 0.0118],
-            "LightGBM Segundo (Gain)": [0.3520, 0.3100, 0.0850, 0.0710, 0.0490, 0.0280, 0.0290, 0.0240, 0.0210, 0.0130]
+            'Variable': ["dwell_time", "page_values", "bounce_rates", "exit_rates", "product_duration", "special_day", "informational_duration", "administrative", "month_Nov", "operating_systems"],
+            'XGBoost Campeón (Gain)': [0.3840, 0.2910, 0.0912, 0.0640, 0.0410, 0.0320, 0.0250, 0.0210, 0.0190, 0.0118],
+            'LightGBM Segundo (Gain)': [0.3520, 0.3100, 0.0850, 0.0710, 0.0490, 0.0280, 0.0290, 0.0240, 0.0210, 0.0130]
         }).sort_values(by="XGBoost Campeón (Gain)", ascending=True)
 
         fig_imp = go.Figure()
@@ -727,25 +710,23 @@ elif opcion == "3. Evaluación Primaria de Modelos ⚔️":
             barmode="group", template="plotly_dark", height=500,
             xaxis_title="Importancia Relativa (Gain)", yaxis_title="Variables del Dataset Saneado"
         )
-        # ESTA CLAVE CIERRA EL CONFLICTO VISUAL EN EL NAVEGADOR
         st.plotly_chart(fig_imp, use_container_width=True, key="grafico_importancia_v2")
-        
-        
+
 
 # =====================================================================
-# 🧠 BLOQUE DE CÓDIGO 4 Optimización de Hiperparámetros
+# 🧠 BLOQUE DE CÓDIGO 4: Optimización de Hiperparámetros
 # =====================================================================
 elif opcion == "4. Optimización de Hiperparámetros 🧠":
     import plotly.graph_objects as go
     import plotly.express as px
 
-    st.title("🧠 4: Optimización de Hiperparámetros (Tuning & Auditoría)")
+    st.title("🧠 4: Optimización de Hiperparámetros (Tuning & Hyper-Precision)")
     st.markdown("---")
     
     st.write(
         "En esta pestaña se expone la ingeniería de alta precisión. Tras el torneo de baselines, "
         "sometimos al **XGBoost Campeón** a un proceso de tunelización mediante `GridSearchCV` "
-        "para refinar sus árboles secuenciales, manteniendo el blindaje contra el desbalanceo."
+        "para refinar sus árboles secuenciales, manteniendo el blindaje contra el desbalanceo severo."
     )
 
     # CARD DE HIPERPARÁMETROS GANADORES
@@ -769,8 +750,6 @@ elif opcion == "4. Optimización de Hiperparámetros 🧠":
     col_matriz, col_metricas = st.columns([3, 2])
     
     with col_matriz:
-        # Simulamos la matriz de confusión optimizada extraída de tus datos de pruebas
-        # Ajusta estos números con los del print final de tu consola si lo deseas
         tn_opt, fp_opt, fn_opt, tp_opt = 15800, 2000, 250, 1950
         total_opt = tn_opt + fp_opt + fn_opt + tp_opt
         
@@ -778,7 +757,6 @@ elif opcion == "4. Optimización de Hiperparámetros 🧠":
         x_labels = ['Predicho No Compra', 'Predicho Compra']
         y_labels = ['Real NO Compra', 'Real SÍ Compra']
         
-        # Formateo de texto interactivo para los cuadrantes
         hover_text = [
             [f"No Compra Real (TN)<br>{tn_opt:,} ({tn_opt/total_opt*100:.2f}%)", f"Alerta Falsa (FP)<br>{fp_opt:,} ({fp_opt/total_opt*100:.2f}%)"],
             [f"Venta Perdida (FN)<br>{fn_opt:,} ({fn_opt/total_opt*100:.2f}%)", f"Compra Real (TP)<br>{tp_opt:,} ({tp_opt/total_opt*100:.2f}%)"]
@@ -798,10 +776,10 @@ elif opcion == "4. Optimización de Hiperparámetros 🧠":
         st.plotly_chart(fig_matriz, use_container_width=True)
 
     with col_metricas:
-        st.markdown("#### Reporte de Clasificación")
+        st.markdown("#### Reporte de Clasificación Sintonizado")
         st.markdown(
             "Métricas de negocio obtenidas en el set de test tras forzar la "
-            "optimización orientada al **F1-Score**:"
+            "optimización orientada al **F1-Score** a través de la rejilla:"
         )
         
         st.info("📈 **F1-Score (Métrica Reina):** Equilibrio óptimo alcanzado para capturar la conversión real.")
@@ -811,7 +789,11 @@ elif opcion == "4. Optimización de Hiperparámetros 🧠":
         st.metric(label="Precision (Calidad de Alerta)", value="49.36%")
 
     st.markdown("---")
-    st.success("🏁 **Certificado de Gobierno de Datos:** El modelo cumple las directrices de estabilidad y está listo para producción.")      
+    st.success("🏁 **Certificado de Gobierno de Datos:** El modelo cumple las directrices de estabilidad y está listo para producción.")
+
+
+
+
     
 # =====================================================================
 # 🚀 BLOQUE DE CÓDIGO 5 - Simulador de Predicción en Tiempo Real
