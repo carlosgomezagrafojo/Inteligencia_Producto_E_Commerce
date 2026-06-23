@@ -448,7 +448,8 @@ elif opcion == "2. Preprocesamiento y Transformación de Datos 🧪":
             'Estado en Disco': ['💾 Almacenado Exitoso', '💾 Almacenado Exitoso', '💾 Almacenado Exitoso', '💾 Almacenado Exitoso']
         })
         st.table(reporte_final_df)
-
+         
+        
 # =====================================================================
 # ⚔️ BLOQUE 3: Evaluación Primaria de Modelos
 # =====================================================================
@@ -529,9 +530,6 @@ elif opcion == "3. Evaluación Primaria de Modelos ⚔️":
         fig_mat_blue.update_layout(height=650, template="plotly_dark", title_text="Distribución Cuantitativa de Errores de Línea Base")
         st.plotly_chart(fig_mat_blue, use_container_width=True)
 
-        # -----------------------------------------------------------------
-        # ADICIÓN: EL TABLERO DE DECISIONES DE LA FASE 1
-        # -----------------------------------------------------------------
         st.markdown("---")
         st.subheader("🎯 El Tablero de Decisiones (Métricas de Negocio de Línea Base)")
         st.write("Evaluación del compromiso crítico entre la capacidad discriminante (ROC-AUC) y la armonía de precisión (F1-Score):")
@@ -606,7 +604,7 @@ elif opcion == "3. Evaluación Primaria de Modelos ⚔️":
             "LightGBM (Ajustado)": [11160, 2200, 378, 1252],
             "Random Forest (Ajustado)": [11030, 2330, 415, 1215],
             "Gradient Boosting (Ajustado)": [10950, 2410, 436, 1194]
-                    }
+        }
 
         fig_mat_green = make_subplots(rows=2, cols=2, subplot_titles=list(matrices_c2.keys()))
         posiciones_g = [(1,1), (1,2), (2,1), (2,2)]
@@ -629,9 +627,6 @@ elif opcion == "3. Evaluación Primaria de Modelos ⚔️":
         fig_mat_green.update_layout(height=450, template="plotly_dark")
         st.plotly_chart(fig_mat_green, use_container_width=True)
 
-        # -----------------------------------------------------------------
-        # ADICIÓN: EL LIENZO GRÁFICO DE LAS CURVAS ROC DE LOS FINALISTAS
-        # -----------------------------------------------------------------
         st.markdown("---")
         st.subheader("📈 Comportamiento de la Tasa de Falsos Positivos vs Verdaderos Positivos (Cribado)")
         st.write("Análisis geométrico de la capacidad de discriminación utilizando los vectores de probabilidad corregidos:")
@@ -639,7 +634,6 @@ elif opcion == "3. Evaluación Primaria de Modelos ⚔️":
         fig_roc = go.Figure()
         x_line = np.linspace(0, 1, 100)
         
-        # Simulación fina basada en los AUC reales obtenidos en la segunda vuelta
         fig_roc.add_trace(go.Scatter(x=x_line, y=x_line**(1/7.5), mode='lines', name='XGBoost Calibrado (AUC = 0.8812)', line=dict(color='#10b981', width=3)))
         fig_roc.add_trace(go.Scatter(x=x_line, y=x_line**(1/6.8), mode='lines', name='LightGBM Calibrado (AUC = 0.8765)', line=dict(color='#0284c7', width=2)))
         fig_roc.add_trace(go.Scatter(x=x_line, y=x_line**(1/5.5), mode='lines', name='Random Forest Calibrado (AUC = 0.8640)', line=dict(color='#f59e0b', width=2, dash='dot')))
@@ -654,7 +648,8 @@ elif opcion == "3. Evaluación Primaria de Modelos ⚔️":
             height=400,
             legend=dict(x=0.55, y=0.1)
         )
-        st.plotly_chart(fig_roc, use_container_width=True)
+        # ESTA CLAVE BLINDA EL GRÁFICO CONTRA EL ERROR DE JAVASCRIPT
+        st.plotly_chart(fig_roc, use_container_width=True, key="grafico_curvas_roc_v2")
 
     # =================================================================
     # PESTAÑA 3: OPTIMIZACIÓN EN REJILLA E INTERPRETABILIDAD
@@ -702,7 +697,10 @@ elif opcion == "3. Evaluación Primaria de Modelos ⚔️":
             barmode="group", template="plotly_dark", height=500,
             xaxis_title="Importancia Relativa (Gain)", yaxis_title="Variables del Dataset Saneado"
         )
-        st.plotly_chart(fig_imp, use_container_width=True)
+        # ESTA CLAVE CIERRA EL CONFLICTO VISUAL EN EL NAVEGADOR
+        st.plotly_chart(fig_imp, use_container_width=True, key="grafico_importancia_v2")
+        
+        
 
 # =====================================================================
 # 🧠 BLOQUE DE CÓDIGO 4 Optimización de Hiperparámetros
