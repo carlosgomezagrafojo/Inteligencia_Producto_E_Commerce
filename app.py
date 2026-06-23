@@ -317,33 +317,34 @@ elif opcion == "2. Preprocesamiento y Transformación de Datos 🧪":
     st.title("🧪: Preprocesamiento, Transformación de Datos e Ingeniería de Variables")
     st.markdown("---")
 
-    # CARGA SEGURO DE DATOS INTERMEDIOS
+    # CARGA SEGURA DE DATOS INTERMEDIOS DESDE EL MOTOR PARQUET GLOBAL
     @st.cache_data
-    def cargar_datos_alquimia():
-        """Carga el tablón base para simular la auditoría en vivo."""
-        ruta = os.path.join(CARPETA_PROCESSED, "ecommerce_master_tablon.csv")
-        if not os.path.exists(ruta):
-            st.error(f"❌ No se encontró el tablón maestro para la auditoría: {ruta}")
+    def cargar_datos_ingenieria():
+        """Recupera el tablón optimizado global para la simulación del pipeline."""
+        # Usamos la variable global 'df' ya cargada al inicio del script principal
+        if df is not None and not df.empty:
+            df_local = df.copy()
+            df_local.columns = df_local.columns.str.strip().str.lower()
+            return df_local
+        else:
+            st.error("❌ El motor de datos global no está inicializado o el archivo Parquet está ausente.")
             return None
-        df = pd.read_csv(ruta)
-        df.columns = df.columns.str.strip().str.lower()
-        return df
 
     with st.spinner("Analizando metadatos y estructuras matemáticas..."):
-        df_alquimia = cargar_datos_alquimia()
+        df_pipeline = cargar_datos_ingenieria()
 
-    if df_alquimia is not None:
-        # FASE 1: DIVISION Y PURGA EN LA INTERFAZ
+    if df_pipeline is not None:
+        # FASE 1: DIVISIÓN Y PURGA EN LA INTERFAZ
         st.subheader("🔬 FASE 1: Purga de Metadatos y El Split Sagrado")
         
-        columnas_originales = df_alquimia.shape[1]
+        columnas_originales = df_pipeline.shape[1]
         columnas_descartadas = [
             'interaction_id', 'user_id', 'product_id', 'session_id', 'user_id_sesion',
             'product_name', 'product_description', 'timestamp', 'start_time', 
             'signup_date', 'date_added', 'dwell_time_ms'
         ]
         
-        df_limpio = df_alquimia.drop(columns=[col for col in columnas_descartadas if col in df_alquimia.columns])
+        df_limpio = df_pipeline.drop(columns=[col for col in columnas_descartadas if col in df_pipeline.columns])
         
         c_split1, c_split2, c_split3 = st.columns(3)
         with c_split1:
@@ -411,8 +412,8 @@ elif opcion == "2. Preprocesamiento y Transformación de Datos 🧪":
             return osm, osr, x_line, y_line
 
         # --- EJECUCIÓN OPTIMIZADA ---
-        if var_seleccionada in df_alquimia.columns:
-            datos_originales = df_alquimia[var_seleccionada].dropna()
+        if var_seleccionada in df_pipeline.columns:
+            datos_originales = df_pipeline[var_seleccionada].dropna()
             
             # Llamadas ultra-rápidas gracias a la caché de Streamlit
             datos_transformados, skew_orig, kurt_orig, skew_trans, kurt_trans = calcular_transformacion_y_metricas(datos_originales)
@@ -433,10 +434,10 @@ elif opcion == "2. Preprocesamiento y Transformación de Datos 🧪":
             col_g1, col_g2 = st.columns(2)
             with col_g1:
                 fig_orig_hist = px.histogram(datos_originales, x=var_seleccionada, title="Distribución Empírica (Sesgo Original)", color_discrete_sequence=['crimson'], template="plotly_dark", height=330)
-                st.plotly_chart(fig_orig_hist, use_container_width=True)
+                st.plotly_chart(fig_orig_hist, width="stretch")
             with col_g2:
                 fig_orig_qq = generar_qq_plot_optimizado(datos_originales, "Q-Q Plot Teórico (Antes)", "crimson")
-                st.plotly_chart(fig_orig_qq, use_container_width=True)
+                st.plotly_chart(fig_orig_qq, width="stretch")
 
             c_met1, c_met2 = st.columns(2)
             c_met1.metric("Asimetría (Skewness) - Original", f"{skew_orig:.4f}", delta="Fuera de Rango" if abs(skew_orig) > 0.5 else "Aceptable", delta_color="inverse")
@@ -452,10 +453,10 @@ elif opcion == "2. Preprocesamiento y Transformación de Datos 🧪":
             col_g3, col_g4 = st.columns(2)
             with col_g3:
                 fig_trans_hist = px.histogram(x=datos_transformados, title="Distribución Normalizada (Mapeo Estable)", color_discrete_sequence=['#10b981'], template="plotly_dark", labels={'x': 'Valor Escalado'}, height=330)
-                st.plotly_chart(fig_trans_hist, use_container_width=True)
+                st.plotly_chart(fig_trans_hist, width="stretch")
             with col_g4:
                 fig_trans_qq = generar_qq_plot_optimizado(datos_transformados, "Q-Q Plot Teórico (Después)", "#10b981")
-                st.plotly_chart(fig_trans_qq, use_container_width=True)
+                st.plotly_chart(fig_trans_qq, width="stretch")
 
             c_met3, c_met4 = st.columns(2)
             c_met3.metric("Asimetría (Skewness) - Saneado", f"{skew_trans:.4f}", delta="Estabilizado ✅")
@@ -477,6 +478,7 @@ elif opcion == "2. Preprocesamiento y Transformación de Datos 🧪":
         })
         st.table(reporte_final_df)
          
+ 
         
 # =====================================================================
 # ⚔️ BLOQUE 3: Evaluación Primaria de Modelos
