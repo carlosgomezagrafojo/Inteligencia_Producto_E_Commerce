@@ -238,7 +238,7 @@ if opcion == "1. Exploración y Análisis de Datos (EDA) 📊":
                 Volumen=('is_converted', 'count'),
                 Ventas=('is_converted', 'sum'),
                 Ingresos=('ingreso_real', 'sum')
-            ).reset_index()
+            ).reset_index() # reiniciar" o "limpiar" el índice de un DataFrame.
             
             micro_pais_cat['Tasa_Conv'] = (micro_pais_cat['Ventas'] / micro_pais_cat['Volumen']) * 100
             micro_pais_cat = micro_pais_cat.sort_values(by=['Volumen', 'Tasa_Conv'], ascending=[False, True]).head(15)
