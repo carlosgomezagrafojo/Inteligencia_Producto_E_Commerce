@@ -28,26 +28,27 @@ if not os.path.exists(CARPETA_PROCESSED):
     os.makedirs(CARPETA_PROCESSED, exist_ok=True)
 
 # Definición de endpoints de almacenamiento e inferencia (Mantenemos tus rutas oficiales)
-RUTA_LOGS = os.path.join(CARPETA_PROCESSED, "logs_inferencia.csv")
-RUTA_MODELO_CAMPEON = os.path.join(BASE_DIR, "models", "optimized_models", "xgboost_campeon_optimizado.pkl")
-RUTA_TRANSFORMADOR = os.path.join(BASE_DIR, "models", "preprocessors", "transformador_aduana.pkl")
+RUTA_LOGS = os.path.join(CARPETA_PROCESSED, "logs_inferencia.csv") # regsitros de iteraciones en tiempo real Streamlit
+RUTA_MODELO_CAMPEON = os.path.join(BASE_DIR, "models", "optimized_models", "xgboost_campeon_optimizado.pkl") # modelo ganador optimizado
+RUTA_TRANSFORMADOR = os.path.join(BASE_DIR, "models", "preprocessors", "transformador_aduana.pkl") # maquina transformadora de datos (Yeo Johson OneHotEncoder) numericas - categoricas
 
 # ⚡ NUEVA RUTA PARA EL TABLÓN COMPRIMIDO DE PRODUCCIÓN
-RUTA_PARQUET = os.path.join(CARPETA_PROCESSED, "ecommerce_master_tablon.parquet")
+RUTA_PARQUET = os.path.join(CARPETA_PROCESSED, "ecommerce_master_tablon.parquet") # df_master_tablon (parquet): EDA.ipynb => 30 columnas x 100000 registros: sin duplicados ni faltantes
 
 # =====================================================================
 # MOTOR DE CARGA OPTIMIZADO PARA PRODUCCIÓN (PARQUET)
 # =====================================================================
+# carga en memoria cache el df_master_tablon para usarlo posteriormente en los gráficos
 @st.cache_data
 def cargar_datos_produccion():
     if os.path.exists(RUTA_PARQUET):
-        return pd.read_parquet(RUTA_PARQUET)
+        return pd.read_parquet(RUTA_PARQUET) # df_master-tablon (formato parquet) 
     else:
         st.error(f"❌ Error Crítico: No se encontró el archivo Parquet en: {RUTA_PARQUET}")
         return pd.DataFrame()
 
 # Cargamos el DataFrame globalmente para que lo usen tus gráficos del EDA
-df = cargar_datos_produccion()
+df = cargar_datos_produccion() # df_master_tablon en memoria cache
 
 # =====================================================================
 # FUNCIONES DE INFRAESTRUCTURA (LOGS Y CACHÉ)
@@ -100,11 +101,11 @@ aduana_datos, xgboost_campeon = cargar_componentes() # el trnasformador y el mod
 
 
 # =====================================================================
-# SEPARADOR DE LA PANTALLA: BARRA LATERAL IZQUIERDA (NAVEGACIÓN)
+# SEPARADOR DE LA PANTALLA: BARRA LATERAL (Lateral y el Enrutador de Páginas)
 # =====================================================================
 st.sidebar.title("🌳 El Bosque: IA Control")
 st.sidebar.markdown("---")
-
+# enrutador de paguinas
 opcion = st.sidebar.radio(
     "Selecciona un Capítulo del Proyecto:",
     [
@@ -120,9 +121,6 @@ opcion = st.sidebar.radio(
 st.sidebar.markdown("---")
 st.sidebar.info("Desarrollado por Carlos Gómez | Pipeline MLOps v2.0")
 
-
-
-
 # =====================================================================
 # 📊 BLOQUE DE CÓDIGO 1 Exploración y Análisis de Datos
 # =====================================================================
@@ -135,49 +133,56 @@ if opcion == "1. Exploración y Análisis de Datos (EDA) 📊":
 
 
     # =====================================================================
-    # PREPARACIÓN EN CALIENTE DE VARIABLES MACROECONÓMICAS (EDA)
+    # El Bloque de Carga en RAM (df_bi) - PREPARACIÓN EN CALIENTE DE VARIABLES MACROECONÓMICAS (EDA)
     # =====================================================================
     if df is not None and not df.empty:
-        # Duplicamos localmente para evitar colisiones en caché
+        # Duplicamos localmente para trabajar con seguridad sobre los hechos reales
         df_bi = df.copy()
         df_bi.columns = df_bi.columns.str.strip().str.lower()
         
-        # Inyección dinámica de métricas financieras de control
-        if 'price' in df_bi.columns and 'is_converted' in df_bi.columns:
-            df_bi['ingreso_real'] = df_bi['price'] * df_bi['is_converted'].astype(int)
-        else:
-            # En caso de que las variables vengan en formato nativo del dataset Olist
-            if 'revenue' in df_bi.columns and 'page_values' in df_bi.columns:
-                df_bi['ingreso_real'] = df_bi['page_values'] * df_bi['revenue'].astype(int)
-                df_bi['is_converted'] = df_bi['revenue']
-            else:
-                df_bi['ingreso_real'] = 0
-                df_bi['is_converted'] = 0
-
-        if 'timestamp' in df_bi.columns:
-            df_bi['timestamp'] = pd.to_datetime(df_bi['timestamp'])
-            df_bi['año'] = df_bi['timestamp'].dt.year
-            df_bi['año_mes'] = df_bi['timestamp'].dt.to_period('M').astype(str)
-        else:
-            # Plan de contingencia si no hay serie de tiempo explícita: creamos eje estático
-            df_bi['año_mes'] = "Fase Activa 2026"
+        # Cálculo directo del ingreso real basado en tus columnas reales
+        df_bi['ingreso_real'] = df_bi['price'] * df_bi['is_converted'].astype(int)
+        
+        # Procesamiento directo de tu serie temporal
+        df_bi['timestamp'] = pd.to_datetime(df_bi['timestamp'])
+        df_bi['año'] = df_bi['timestamp'].dt.year
+        df_bi['año_mes'] = df_bi['timestamp'].dt.to_period('M').astype(str)
+        
     else:
         df_bi = None
         st.error("❌ El motor de datos global está vacío o no se ha inicializado correctamente.")
-
+        
+    # =====================================================================
+    # FILTROS PRIMERO (segmentación de df_bi), MÉTRICAS DESPUÉS
+    # =====================================================================
     if df_bi is not None:
-        # -----------------------------------------------------------------
-        # METRICAS CLAVE: CON ESTA FUNCIÓN SE ORGANIZAN 5 CUADROS EN 1 FILA
-        # -----------------------------------------------------------------
-        # Dividimos la pantalla en 5 columnas horizontales para mostrar los KPIs principales del negocio
+        
+        # 1. Creamos los selectores en la barra lateral
+        st.sidebar.markdown("### 🎛️ Filtros Macro-Descubrimiento")
+        paises_disponibles = sorted(df_bi['country'].unique())
+        paises_seleccionados = st.sidebar.multiselect("Filtrar por País Geo:", paises_disponibles, default=paises_disponibles[:5])
+
+        categorias_disponibles = sorted(df_bi['category'].unique())
+        categorias_seleccionadas = st.sidebar.multiselect("Filtrar por Categoría:", categorias_disponibles, default=categorias_disponibles)
+
+        # 2. Construimos la matriz filtrada en base a los clics del usuario; mascara de filtrado aplicado al df_bi (df en memoria)
+        df_filtrado = df_bi[
+            (df_bi['country'].isin(paises_seleccionados)) & 
+            (df_bi['category'].isin(categorias_seleccionadas))
+        ]
+
+        # 3. Cocina matemática dinámica (mirando a df_filtrado)
         st.subheader("🌍 Capa de Control Macroeconómico de Negocio (Vista Satélite)")
         
-        total_registros = len(df_bi)
-        total_ventas = int(df_bi['is_converted'].sum())
-        ingresos_totales = float(df_bi['ingreso_real'].sum())
-        tasa_conversion = (total_ventas / total_registros) * 100
-        ticket_medio = float(df_bi[df_bi['is_converted'] == 1]['price'].mean())
+        total_registros = len(df_filtrado)
+        total_ventas = int(df_filtrado['is_converted'].sum())
+        ingresos_totales = float(df_filtrado['ingreso_real'].sum())
+        
+        # Control de seguridad: si el usuario desmarca todo, evitamos que Python rompa por división por cero
+        tasa_conversion = (total_ventas / total_registros) * 100 if total_registros > 0 else 0
+        ticket_medio = float(df_filtrado[df_filtrado['is_converted'] == 1]['price'].mean()) if total_ventas > 0 else 0
 
+        # 4. Emplatado visual de las 5 etiquetas dinámicas
         col1, col2, col3, col4, col5 = st.columns(5)
         col1.metric("💰 Ingresos de Control", f"${ingresos_totales:,.2f}")
         col2.metric("🛒 Interacciones", f"{total_registros:,}")
@@ -186,23 +191,6 @@ if opcion == "1. Exploración y Análisis de Datos (EDA) 📊":
         col5.metric("💵 Ticket Medio", f"${ticket_medio:.2f}")
 
         st.markdown("---")
-
-        # -----------------------------------------------------------------
-        # FILTROS QUE TOMAREMOS EN CUENTA EN LA BARRA LATERAL (GEOGRAFÍA Y CATEGORÍA)
-        # -----------------------------------------------------------------
-        # Estos controles modifican la data del Árbol 1 dinámicamente sin tocar el resto de la app
-        st.sidebar.markdown("### 🎛️ Filtros Macro-Descubrimiento")
-        paises_disponibles = sorted(df_bi['country'].unique())
-        paises_seleccionados = st.sidebar.multiselect("Filtrar por País Geo:", paises_disponibles, default=paises_disponibles[:5])
-        
-        categorias_disponibles = sorted(df_bi['category'].unique())
-        categorias_seleccionadas = st.sidebar.multiselect("Filtrar por Categoría:", categorias_disponibles, default=categorias_disponibles)
-
-        # Aplicamos la máscara de filtrado al DataFrame en memoria
-        df_filtrado = df_bi[
-            (df_bi['country'].isin(paises_seleccionados)) & 
-            (df_bi['category'].isin(categorias_seleccionadas))
-        ]
 
         # -----------------------------------------------------------------
         # GRÁFICA DEL CUADRO TEMPORAL (RELACIÓN TRAFICO VS CAPITAL)
