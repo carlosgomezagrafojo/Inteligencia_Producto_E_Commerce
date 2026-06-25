@@ -158,10 +158,12 @@ if opcion == "1. Exploración y Análisis de Datos (EDA) 📊":
     if df_bi is not None:
         
         # 1. Creamos los selectores en la barra lateral
+        # filtro por paises
         st.sidebar.markdown("### 🎛️ Filtros Macro-Descubrimiento")
         paises_disponibles = sorted(df_bi['country'].unique())
         paises_seleccionados = st.sidebar.multiselect("Filtrar por País Geo:", paises_disponibles, default=paises_disponibles[:5])
-
+        
+        # filtro por categoria
         categorias_disponibles = sorted(df_bi['category'].unique())
         categorias_seleccionadas = st.sidebar.multiselect("Filtrar por Categoría:", categorias_disponibles, default=categorias_disponibles)
 
@@ -172,8 +174,10 @@ if opcion == "1. Exploración y Análisis de Datos (EDA) 📊":
         ]
 
         # 3. Cocina matemática dinámica (mirando a df_filtrado)
+        # titulo para indicadores o etiquetas
         st.subheader("🌍 Capa de Control Macroeconómico de Negocio (Vista Satélite)")
         
+        # Indicadores para cada etiqueta
         total_registros = len(df_filtrado)
         total_ventas = int(df_filtrado['is_converted'].sum())
         ingresos_totales = float(df_filtrado['ingreso_real'].sum())
@@ -234,6 +238,7 @@ if opcion == "1. Exploración y Análisis de Datos (EDA) 📊":
 
         with tab1:
             st.markdown("#### Oportunidades de Embudo Cruzado (Top 15 Nichos de Tráfico)")
+            
             micro_pais_cat = df_filtrado.groupby(['country', 'category']).agg(
                 Volumen=('is_converted', 'count'),
                 Ventas=('is_converted', 'sum'),
@@ -279,7 +284,7 @@ if opcion == "1. Exploración y Análisis de Datos (EDA) 📊":
             
             with col_graph1:
                 df_int = df_filtrado['interaction_type'].value_counts().reset_index()
-                fig_int = px.bar(df_int, x='interaction_type', y='count', 
+                fig_int = px.bar(df_int, x='interaction_type', y='count', # Crea un gráfico de barras vertical básico donde cada barra es un tipo de interacción y la altura es la cantidad total.
                                  title="Distribución Total de Interacciones",
                                  template="plotly_dark", color_discrete_sequence=['#10b981'])
                 st.plotly_chart(fig_int, use_container_width=True)
